@@ -1,3 +1,6 @@
+<script setup>
+import ReservationSystem from "./components/ReservationSystem.vue";
+</script>
 <template>
-  <h1>Foodics - POS</h1>
+  <ReservationSystem />
 </template>
