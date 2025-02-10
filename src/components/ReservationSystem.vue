@@ -23,7 +23,7 @@ const selectedBranch = ref({
   },
 });
 
-// Configure axios with base URL and auth token
+
 const api = axios.create({
   baseURL: '/api',
   headers: {
@@ -80,7 +80,7 @@ const addBranch = () => {
 };
 
 const handleAddBranch = (branchReference) => {
-  // Add new branch to the branches array
+ 
   branches.value.push({
     name: `Branch ${branches.value.length + 1}`,
     reference: branchReference,
@@ -130,7 +130,7 @@ const handleSaveSettings = (settings) => {
     };
   }
 
-  console.log("Saving settings:", settings);
+ 
 };
 </script>
 
