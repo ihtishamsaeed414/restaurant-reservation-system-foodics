@@ -69,7 +69,7 @@ const isTableSelected = (table) => {
 // Time slot management
 const addTimeSlot = (day) => {
   if (timeSlots.value[day].length < 3) {
-    timeSlots.value[day].push("00:00 - 00:00");
+    timeSlots.value[day].push({ start: "00:00", end: "00:00" });
   }
 };
 
@@ -114,50 +114,93 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener("click", handleClickOutside);
 });
+
+// New functionality for time range input
+const activeDayInput = ref(null); // Track which day's input is active
+const newTimeSlot = ref({ start: "", end: "" });
+
+const saveTimeSlot = (day) => {
+  if (newTimeSlot.value.start && newTimeSlot.value.end) {
+    timeSlots.value[day].push({
+      start: newTimeSlot.value.start,
+      end: newTimeSlot.value.end,
+    });
+    newTimeSlot.value = { start: "", end: "" };
+    activeDayInput.value = null; // Close the input field
+  }
+};
+
+const cancelTimeSlot = (day) => {
+  newTimeSlot.value = { start: "", end: "" };
+  activeDayInput.value = null; // Close the input field
+};
 </script>
 
 <template>
   <div
     v-if="isOpen"
-    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
+    aria-modal="true"
+    role="dialog"
   >
     <div
-      class="bg-white rounded-lg w-full max-w-2xl shadow-lg overflow-y-auto max-h-[90vh]"
+      class="bg-white rounded-lg w-full max-w-2xl shadow-lg overflow-y-auto max-h-[90vh] relative"
     >
       <!-- Modal Header -->
-      <div class="px-6 py-4 border-b">
-        <h2 class="text-xl text-gray-800">
+      <div class="px-6 py-4 border-b flex justify-between items-center">
+        <h2 class="text-xl font-semibold text-gray-800">
           Edit {{ branchData.name }} branch reservation settings
         </h2>
+        <button
+          @click="close"
+          class="text-gray-500 hover:text-gray-700 transition-colors"
+          aria-label="Close modal"
+        >
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
       </div>
 
       <!-- Modal Body -->
       <div class="px-6 py-4 space-y-6">
         <!-- Working Hours Notice -->
-        <div class="bg-blue-50 p-4 text-blue-600 rounded-lg">
+        <div class="bg-blue-50 p-4 text-blue-600 rounded-lg text-sm">
           Branch working hours are 00:00 - 00:00
         </div>
 
         <!-- Reservation Duration -->
         <div class="space-y-2">
-          <label class="block text-gray-700">
+          <label class="block text-gray-700 font-medium">
             Reservation Duration (minutes) <span class="text-red-500">*</span>
           </label>
           <input
             v-model="duration"
             type="number"
-            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+            aria-label="Reservation duration in minutes"
           />
         </div>
 
         <!-- Tables Selection -->
         <div class="relative w-full table-dropdown">
-          <label class="block text-gray-700 mb-2">Tables</label>
+          <label class="block text-gray-700 font-medium mb-2">Tables</label>
           <div class="relative">
             <!-- Selected Tables Display -->
             <div
               @click="toggleDropdown"
-              class="w-full px-4 py-3 border rounded-lg bg-white flex items-center justify-between cursor-pointer"
+              class="w-full px-4 py-3 border rounded-lg bg-white flex items-center justify-between cursor-pointer hover:border-purple-500 transition-all"
+              :aria-expanded="isDropdownOpen"
             >
               <div class="flex flex-wrap gap-2 items-center">
                 <template v-if="selectedTables.length === 0">
@@ -167,7 +210,7 @@ onUnmounted(() => {
                   <div
                     v-for="table in selectedTables.slice(0, 2)"
                     :key="table.id"
-                    class="px-3 py-1 bg-white border border-blue-400 text-blue-600 rounded-full"
+                    class="px-3 py-1 bg-white border border-purple-400 text-purple-600 rounded-full text-sm"
                   >
                     {{ table.name }}
                   </div>
@@ -177,16 +220,16 @@ onUnmounted(() => {
                 </template>
               </div>
               <svg
-                class="w-5 h-5 text-gray-400"
+                class="w-5 h-5 text-gray-400 transition-transform"
                 :class="{ 'transform rotate-180': isDropdownOpen }"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
                   d="M19 9l-7 7-7-7"
                 />
               </svg>
@@ -212,9 +255,9 @@ onUnmounted(() => {
                   viewBox="0 0 24 24"
                 >
                   <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
                     d="M5 13l4 4L19 7"
                   />
                 </svg>
@@ -227,11 +270,11 @@ onUnmounted(() => {
         <div class="space-y-4">
           <div v-for="day in daysOfWeek" :key="day" class="space-y-2">
             <div class="flex justify-between items-center">
-              <h3 class="text-gray-700">{{ day }}</h3>
+              <h3 class="text-gray-700 font-medium">{{ day }}</h3>
               <button
                 v-if="day === 'Saturday'"
                 @click="applyToAllDays"
-                class="text-purple-600 hover:text-purple-700"
+                class="text-purple-600 hover:text-purple-700 text-sm"
               >
                 Apply on all days
               </button>
@@ -240,33 +283,76 @@ onUnmounted(() => {
             <div class="bg-gray-50 p-4 rounded-lg">
               <div class="flex items-center justify-between">
                 <div class="flex flex-wrap gap-2 flex-grow">
-                  <div v-if="timeSlots[day].length === 0" class="text-gray-500">
-                    Add Available Reservation Times
-                  </div>
-
+                  <!-- Display Existing Time Slots -->
                   <div
                     v-for="(slot, index) in timeSlots[day]"
                     :key="index"
                     class="relative group"
                   >
                     <div
-                      class="px-4 py-2 border border-purple-500 rounded-lg text-purple-600 flex items-center"
+                      class="px-4 py-2 border border-purple-500 rounded-lg text-purple-600 flex items-center text-sm"
                     >
-                      {{ slot }}
+                      {{ slot.start }} - {{ slot.end }}
                       <button
                         @click.stop="removeTimeSlot(day, index)"
-                        class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700"
+                        aria-label="Remove time slot"
                       >
-                        ×
+                        ✖️
                       </button>
                     </div>
                   </div>
+
+                  <!-- Placeholder when no time slots are added -->
+                  <div
+                    v-if="timeSlots[day].length === 0 && activeDayInput !== day"
+                    class="text-gray-500 italic text-sm"
+                  >
+                    Add available reservation Time
+                  </div>
+
+                  <!-- Input Field for New Time Slot -->
+                  <div
+                    v-if="activeDayInput === day"
+                    class="flex items-center gap-2"
+                  >
+                    <input
+                      v-model="newTimeSlot.start"
+                      type="time"
+                      class="px-4 py-2 border border-purple-500 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      aria-label="Start time"
+                    />
+                    <span class="text-gray-500">to</span>
+                    <input
+                      v-model="newTimeSlot.end"
+                      type="time"
+                      class="px-4 py-2 border border-purple-500 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      aria-label="End time"
+                    />
+                    <button
+                      @click="saveTimeSlot(day)"
+                      class="px-3 py-2 bg-gray-200 text-white rounded-lg hover:bg-green-500 transition-colors"
+                      aria-label="Save time slot"
+                    >
+                      ✔️
+                    </button>
+                    <button
+                      @click="cancelTimeSlot(day)"
+                      class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
+                      aria-label="Cancel time slot"
+                    >
+                      ✖️
+                    </button>
+                  </div>
                 </div>
 
+                <!-- Add Icon -->
                 <button
-                  v-if="timeSlots[day].length < 3"
-                  @click="addTimeSlot(day)"
-                  class="ml-4 w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-50"
+                  v-if="timeSlots[day].length < 3 && activeDayInput !== day"
+                  @click="activeDayInput = day"
+                  :disabled="timeSlots[day].length >= 3"
+                  class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Add time slot"
                 >
                   <svg
                     class="w-5 h-5 text-gray-600"
@@ -275,9 +361,9 @@ onUnmounted(() => {
                     viewBox="0 0 24 24"
                   >
                     <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
                       d="M12 4v16m8-8H4"
                     />
                   </svg>
@@ -290,19 +376,21 @@ onUnmounted(() => {
 
       <!-- Modal Footer -->
       <div class="px-6 py-4 flex justify-between border-t">
-        <button class="text-red-500 hover:text-red-600">
+        <button
+          class="text-red-500 hover:text-red-600 font-medium transition-colors"
+        >
           Disable Reservations
         </button>
         <div class="space-x-4">
           <button
             @click="close"
-            class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Close
           </button>
           <button
             @click="save"
-            class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             Save
           </button>
@@ -311,3 +399,19 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Add smooth transitions for hover effects */
+button,
+input,
+.dropdown-item {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Improve focus states for accessibility */
+button:focus,
+input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.3);
+}
+</style>
