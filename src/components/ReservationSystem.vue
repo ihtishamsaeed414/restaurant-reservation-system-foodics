@@ -12,6 +12,15 @@ const selectedBranch = ref({
   reference: "",
   tables: 0,
   duration: 30,
+  timeSlots: {
+    Saturday: [],
+    Sunday: [],
+    Monday: [],
+    Tuesday: [],
+    Wednesday: [],
+    Thursday: [],
+    Friday: [],
+  },
 });
 
 // Configure axios with base URL and auth token
@@ -34,7 +43,16 @@ const fetchBranches = async () => {
         name: branch.name,
         reference: branch.reference,
         tables: countReservationTables(branch),
-        duration: `${branch.reservation_duration} Minutes`
+        duration: `${branch.reservation_duration} Minutes`,
+        timeSlots: branch.timeSlots || {
+          Saturday: [],
+          Sunday: [],
+          Monday: [],
+          Tuesday: [],
+          Wednesday: [],
+          Thursday: [],
+          Friday: [],
+        },
       }));
   } catch (error) {
     console.error('Error fetching branches:', error);
@@ -68,6 +86,15 @@ const handleAddBranch = (branchReference) => {
     reference: branchReference,
     tables: 0,
     duration: "30 Minutes",
+    timeSlots: {
+      Saturday: [],
+      Sunday: [],
+      Monday: [],
+      Tuesday: [],
+      Wednesday: [],
+      Thursday: [],
+      Friday: [],
+    },
   });
 };
 
@@ -75,12 +102,21 @@ const openBranchSettings = (branch) => {
   selectedBranch.value = {
     ...branch,
     duration: parseInt(branch.duration), // Convert duration to number
+    tables: branch.tables || 0,
+    timeSlots: branch.timeSlots || {
+      Saturday: [],
+      Sunday: [],
+      Monday: [],
+      Tuesday: [],
+      Wednesday: [],
+      Thursday: [],
+      Friday: [],
+    },
   };
   isSettingsModalOpen.value = true;
 };
 
 const handleSaveSettings = (settings) => {
-  // Update branch settings in your data store
   const branchIndex = branches.value.findIndex(
     (b) => b.reference === selectedBranch.value.reference
   );
@@ -90,6 +126,7 @@ const handleSaveSettings = (settings) => {
       ...branches.value[branchIndex],
       duration: `${settings.duration} Minutes`,
       tables: settings.tables.length,
+      timeSlots: settings.timeSlots,
     };
   }
 

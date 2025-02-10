@@ -1,16 +1,11 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, watch } from "vue";
 
 const props = defineProps({
   isOpen: Boolean,
   branchData: {
     type: Object,
     required: true,
-    default: () => ({
-      name: "",
-      duration: 30,
-      tables: [],
-    }),
   },
 });
 
@@ -19,8 +14,8 @@ const emit = defineEmits(["close", "save"]);
 // State management
 const isDropdownOpen = ref(false);
 const duration = ref(props.branchData.duration);
-const selectedTables = ref([]);
-const timeSlots = ref({
+const selectedTables = ref(props.branchData.tables || []);
+const timeSlots = ref(props.branchData.reservation_times || {
   Saturday: [],
   Sunday: [],
   Monday: [],
@@ -134,6 +129,21 @@ const cancelTimeSlot = (day) => {
   newTimeSlot.value = { start: "", end: "" };
   activeDayInput.value = null; // Close the input field
 };
+
+// Watch for changes in branchData to update local state
+watch(() => props.branchData, (newData) => {
+  duration.value = newData.duration;
+  selectedTables.value = newData.tables || [];
+  timeSlots.value = newData.reservation_times || {
+    Saturday: [],
+    Sunday: [],
+    Monday: [],
+    Tuesday: [],
+    Wednesday: [],
+    Thursday: [],
+    Friday: [],
+  };
+});
 </script>
 
 <template>
